@@ -1,7 +1,7 @@
 FROM command-r
 
-# set temperature - higher is more creative, lower is more coherent
-PARAMETER temperature 2
+# set temperature - higher is more creative, lower is more coherent - 1 is a good default
+PARAMETER temperature 0.75
 
 # set the system message
 SYSTEM """
