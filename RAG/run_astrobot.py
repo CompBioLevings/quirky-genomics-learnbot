@@ -7,7 +7,7 @@ Conversational RAG Bot using Ollama LLM and Chroma Vector Store.
 import pickle
 import os
 from typing import List, Dict, Optional
-from langUntitled-1chain_community.llms import Ollama
+from langchain_community.llms import Ollama
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
