@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class ConversationalRAGBot:
     def __init__(
         self,
-        pickle_path: str = "conversation_memory.pkl",
+        pickle_path: str = "./conversation_memory.pkl",
         chroma_persist_dir: str = "./chroma_db",
         model_name: str = "astrobot",
         embedding_model: str = "all-mpnet-base-v2",
@@ -176,7 +176,9 @@ class ConversationalRAGBot:
 # Start the chatbot and use
 if __name__ == "__main__":
     # Initialize bot
-    bot = ConversationalRAGBot()
+    bot = ConversationalRAGBot(pickle_path="./RAG/conversation_memory.pkl", \
+        chroma_persist_dir="./RAG/chroma_db", \
+        model_name="astrobot")
     
     # bot.test_retrieval("Do you have any papers about ROS-independent Nrf2 activation in prostate cance", k=2)
     
