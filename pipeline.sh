@@ -71,14 +71,10 @@ else
     printf "chroma_db directory already exists in RAG directory, skipping creation\n"
 fi
 
-# Now activate the conda environment
+# Now activate the conda environment - if conda command doesn't work use mamba
 printf "\nActivating mamba/conda environment for running Astro Bot RAG\n"
-conda activate astrobot
-
-# Move into RAG directory
-printf "\nChanging to RAG dir\n"
-cd RAG
+${conda:-mamba} activate astrobot
 
 # Now run the RAG app
 printf "\nRunning Astro Bot RAG app\n\n"
-python run_astrobot.py
+python RAG/run_astrobot.py
