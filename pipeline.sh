@@ -76,10 +76,15 @@ printf "\nChecking if ollama server is running\n"
 if ! pgrep -x "ollama" > /dev/null
 then
     printf "\nStarting ollama server\n"
-    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
+    # run the command in background with nohup
+    nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start' > /dev/null 2>&1 &
+    # If you want to debug use the command below instead (and comment out the one above):
+    # OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
 else
     printf "\nOllama server already running\n"
 fi
+
+sleep 2
 
 # Now activate the conda environment - if conda command doesn't work use mamba
 printf "\nActivating mamba/conda environment for running Astro Bot RAG\n"
