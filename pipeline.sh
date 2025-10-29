@@ -15,7 +15,7 @@ if [ ! -d "RAG/chroma_db" ]; then
     source "$HOME/.bashrc"
 
     # First set up environment for making a RAG (retrieval-augmented generation) model
-    mamba env create -n astrobot -f astrobot.yml
+    mamba env create -n astrobot -f astrobot.yml -y
 
     # Fire up ollama
     OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
