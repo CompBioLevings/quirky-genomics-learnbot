@@ -18,7 +18,7 @@ if [ ! -d "RAG/chroma_db" ]; then
     mamba env create -n astrobot -f astrobot.yml -y
 
     # Fire up ollama
-    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
+    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve > /dev/null 2>&1 &
 
     # Now pull model
     printf "\nPulling the command-r model\n"
@@ -80,5 +80,5 @@ printf "\nChanging to RAG dir\n"
 cd RAG
 
 # Now run the RAG app
-printf "\nRunning Astro Bot RAG app\n"
+printf "\nRunning Astro Bot RAG app\n\n"
 python run_astrobot.py
