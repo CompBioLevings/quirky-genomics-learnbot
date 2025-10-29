@@ -76,7 +76,7 @@ printf "\nChecking if ollama server is running\n"
 if ! pgrep -x "ollama" > /dev/null
 then
     printf "\nStarting ollama server\n"
-    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start
+    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
 else
     printf "\nOllama server already running\n"
 fi
