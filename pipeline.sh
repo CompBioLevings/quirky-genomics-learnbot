@@ -73,6 +73,9 @@ fi
 
 # Now activate the conda environment - if conda command doesn't work use mamba
 printf "\nActivating mamba/conda environment for running Astro Bot RAG\n"
+
+# init current shell to use conda/mamba
+source "$HOME/.bashrc"
 ${conda:-mamba} activate astrobot
 
 # Now run the RAG app
