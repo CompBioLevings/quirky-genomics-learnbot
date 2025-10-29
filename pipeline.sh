@@ -18,7 +18,7 @@ if [ ! -d "RAG/chroma_db" ]; then
     mamba env create -n astrobot -f astrobot.yml -y
 
     # Fire up ollama
-    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start
+    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
 
     # Now pull model
     printf "\nPulling the command-r model\n"
@@ -69,6 +69,16 @@ if [ ! -d "RAG/chroma_db" ]; then
     cd ..
 else
     printf "chroma_db directory already exists in RAG directory, skipping creation\n"
+fi
+
+# Check if ollama running, if not start it
+printf "\nChecking if ollama server is running\n"
+if ! pgrep -x "ollama" > /dev/null
+then
+    printf "\nStarting ollama server\n"
+    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start
+else
+    printf "\nOllama server already running\n"
 fi
 
 # Now activate the conda environment - if conda command doesn't work use mamba
