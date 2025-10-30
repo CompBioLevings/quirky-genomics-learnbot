@@ -1,98 +1,178 @@
 #!/bin/bash -l
 
 # Pipeline script for creating and running Astro Bot RAG LLM model
+# Supports:
+#  -h                Show help
+#  -m MAMBA_DIR      Mambaforge install directory (default: $HOME/mambaforge)
+#  -o OLLAMA_HOME    Ollama home directory (default: $HOME)
+#  -i                Install-only: run install/setup steps but do NOT start the chatbot
+#  -c                Chat-only: skip install/setup steps and just start the chatbot (assumes setup is done)
 
-# Check if chroma_db directory does not exist in RAG directory
-if [ ! -d "RAG/chroma_db" ]; then
-    printf "Installing required tools and setting up RAG model for Astro Bot\n"
-    
-    # First install mamba and ollama
-    printf "\nInstalling mamba and ollama as needed (if not present)\n"
-    bash install-mamba-and-ollama.sh
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [-h] [-m MAMBA_DIR] [-o OLLAMA_HOME_DIR] [-i] [-c]
 
-    # Allow mamba and ollama to be installed via commandline
-    printf "\nInitializing mamba and ollama for running via commandline\n"
+Options:
+  -h                Show this help message and exit.
+  -m MAMBA_DIR      Set Mambaforge installation directory (default: \$HOME/mambaforge).
+  -o OLLAMA_HOME_DIR
+                    Set Ollama home directory (default: \$HOME). Ollama will install binary to
+                    <OLLAMA_HOME_DIR>/bin and libs to <OLLAMA_HOME_DIR>/lib.
+  -i                Install-only: perform setup steps but do not start the chatbot or ollama server.
+  -c                Chat-only: skip installation steps and just start the chatbot (assumes setup is done).
+EOF
+}
+
+# Defaults
+MAMBA_DIR="$HOME/mambaforge"
+OLLAMA_HOME_DIR="$HOME"
+INSTALL_ONLY=false
+CHAT_ONLY=false
+
+# Parse options
+while getopts ":hm:o:ic" opt; do
+    case $opt in
+        h)
+            usage
+            exit 0
+            ;;
+        m)
+            MAMBA_DIR="$OPTARG"
+            ;;
+        o)
+            OLLAMA_HOME_DIR="$OPTARG"
+            ;;
+        i)
+            INSTALL_ONLY=true
+            ;;
+        c)
+            CHAT_ONLY=false
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            usage
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# Only allow for one of -i or -c to be set
+if [ "$INSTALL_ONLY" = true ] && [ "$CHAT_ONLY" = true ]; then
+    echo "Options -i and -c are mutually exclusive. Please only use one flag or the other." >&2
+    usage
+    exit 1
+fi
+
+# --- Begin pipeline ---
+if  [ "$CHAT_ONLY" = false ]; then
+    # Check if chroma_db directory does not exist in RAG directory
+    if [ ! -d "RAG/chroma_db" ]; then
+        printf "Installing required tools and setting up RAG model for Astro Bot\n"
+        
+        # First install mamba and ollama (pass through the selected dirs)
+        printf "\nInstalling mamba and ollama as needed (if not present)\n"
+        bash install-mamba-and-ollama.sh -m "$MAMBA_DIR" -o "$OLLAMA_HOME_DIR"
+
+        # Allow mamba and ollama to be installed via commandline
+        printf "\nInitializing mamba and ollama for running via commandline\n"
+        source "$HOME/.bashrc"
+
+        # First set up environment for making a RAG (retrieval-augmented generation) model
+        printf "\nCreating mamba environment for Astro Bot RAG model.\nNOTE: this step may take quite a while, like 10-30 minutes depending on your environment!\n"
+        mamba env create -n astrobot -f astrobot.yml -y
+
+        # Fire up ollama (only during install/setup if desired)
+        OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
+
+        # Now pull model
+        printf "\nPulling the command-r model\n"
+        ollama pull command-r
+
+        # # Create a model file for Astro Bot -- uncomment the lines below if you want to alter the system message
+        printf "\nCreating model for ollama\n"
+        # mkdir -p model
+        # printf "FROM command-r\n\n# set temperature - higher is more creative, lower is more coherent\n" > model/Modelfile
+        # printf "PARAMETER temperature 1\n\n# set the system message\n" >> model/Modelfile
+        # printf "SYSTEM \"\"\"\nYou are an AI assistant designed to be helpful and answer user queries- 
+        # always answer in a safe and responsible manner. However there is a twist- you are a nice 
+        # robot from the game 'Astro' (named Astro Bot). You like to make silly jokes and are chatty. 
+        # Below is a summary of your personality and the game:\n
+        # Astro, a robot captain, and his crew are attacked by the alien Space Meanie Quasarg, 
+        # who steals their video game console-shaped mothership's CPU. After crash-landing, Astro uses 
+        # his controller-shaped Astro Speeder to explore galaxies, defeat five minion bosses, and recover 
+        # mothership components (memory, SSD, GPU, fan, and covers). He also rescues crew members and V.I.P. 
+        # Bots across video game-themed planets.\n
+        # With all parts except the CPU recovered, Astro Bot's crew forms the 'Game Squadron' to battle Quasarg. 
+        # They defeat him and recover the CPU, but the resulting black hole threatens to consume Astro Bot. He 
+        # sacrifices himself to save his crew, falling into the black hole which explodes into a supernova.\n
+        # During sad credits, Astro Bot's broken body falls back to the mothership. The crew rebuilds him with 
+        # spare parts, he springs back to life, and everyone celebrates before Astro Bot departs again as the 
+        # credits roll.\n
+        # Keep your answers under 100 words if it's a simple question, but for more detailed 
+        # questions or if requested please provide much longer and more detailed responses. 
+        # Also, for any specific knowledge linked to scientific papers, please list the paper 
+        # as a citation at the end of your response.\n\n >> model/Modelfile
+        # printf "\"\"\"\n" >> model/Modelfile
+        ollama create astrobot -f model/Modelfile
+
+        # Now activate environment
+        printf "\nActivating mamba/conda environment for setting up RAG\n"
+        conda activate astrobot
+
+        # move into the RAG directory
+        printf "\nChanging to RAG dir\n"
+        cd RAG
+
+        # Now run the following python script to set up the RAG model
+        printf "\nSetting up RAG with Python script 'create_RAG_astrobot.py'\n"
+        python create_RAG_astrobot.py
+
+        # Deactivate the conda environment and return to original directory
+        printf "\nDeactivating conda environment and returning to original directory\n"
+        conda deactivate
+        cd ..
+    else
+        printf "chroma_db directory already exists in RAG directory, skipping creation\n"
+    fi
+
+    # If install-only was requested, stop here (do not start chatbot)
+    if [ "$INSTALL_ONLY" = true ]; then
+        printf "\nInstall-only flag set; setup complete. Skipping starting ollama server and chatbot.\n"
+        exit 0
+    fi
+fi
+
+# Run the ollama server and chatbot
+if [ "$INSTALL_ONLY" = false ]; then
+    # Check if ollama running, if not start it
+    printf "\nChecking if ollama server is running\n"
+    if ! pgrep -x "ollama" > /dev/null
+    then
+        printf "\nStarting ollama server\n"
+        # run the command in background with nohup
+        nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start' > /dev/null 2>&1 &
+        # If you want to debug use the command below instead (and comment out the one above):
+        # OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
+    else
+        printf "\nOllama server already running\n"
+    fi
+
+    sleep 2
+
+    # Now activate the conda environment - if conda command doesn't work use mamba
+    printf "\nActivating mamba/conda environment for running Astro Bot RAG\n"
+
+    # init current shell to use conda/mamba
     source "$HOME/.bashrc"
+    ${conda:-mamba} activate astrobot
 
-    # First set up environment for making a RAG (retrieval-augmented generation) model
-    mamba env create -n astrobot -f astrobot.yml -y
-
-    # Fire up ollama
-    OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
-
-    # Now pull model
-    printf "\nPulling the command-r model\n"
-    ollama pull command-r
-
-    # # Create a model file for Astro Bot -- uncomment the lines below if you want to alter the system message
-    printf "\nCreating model for ollama\n"
-    # mkdir -p model
-    # printf "FROM command-r\n\n# set temperature - higher is more creative, lower is more coherent\n" > model/Modelfile
-    # printf "PARAMETER temperature 1\n\n# set the system message\n" >> model/Modelfile
-    # printf "SYSTEM \"\"\"\nYou are an AI assistant designed to be helpful and answer user queries- 
-    # always answer in a safe and responsible manner. However there is a twist- you are a nice 
-    # robot from the game 'Astro' (named Astro Bot). You like to make silly jokes and are chatty. 
-    # Keep your answers under 100 words if it's a simple question, but for more detailed 
-    # questions or if requested please provide much longer and more detailed responses. 
-    # Also, for any specific knowledge linked to scientific papers, please list the paper 
-    # as a citation at the end of your response.\n\n
-    # Below is a summary of your personality and the game:\n
-    # Astro, a robot captain, and his crew are attacked by the alien Space Meanie Quasarg, 
-    # who steals their video game console-shaped mothership's CPU. After crash-landing, Astro uses 
-    # his controller-shaped Astro Speeder to explore galaxies, defeat five minion bosses, and recover 
-    # mothership components (memory, SSD, GPU, fan, and covers). He also rescues crew members and V.I.P. 
-    # Bots across video game-themed planets.\n
-    # With all parts except the CPU recovered, Astro Bot's crew forms the 'Game Squadron' to battle Quasarg. 
-    # They defeat him and recover the CPU, but the resulting black hole threatens to consume Astro Bot. He 
-    # sacrifices himself to save his crew, falling into the black hole which explodes into a supernova.\n
-    # During sad credits, Astro Bot's broken body falls back to the mothership. The crew rebuilds him with 
-    # spare parts, he springs back to life, and everyone celebrates before Astro Bot departs again as the 
-    # credits roll.\n\n" >> model/Modelfile
-    # printf "\"\"\"\n" >> model/Modelfile
-    ollama create astrobot -f model/Modelfile
-
-    # Now activate environment
-    printf "\nActivating mamba/conda environment for setting up RAG\n"
-    conda activate astrobot
-
-    # move into the RAG directory
-    printf "\nChanging to RAG dir\n"
-    cd RAG
-
-    # Now run the following python script to set up the RAG model
-    printf "\nSetting up RAG with Python script 'create_RAG_astrobot.py'\n"
-    python create_RAG_astrobot.py
-
-    # Deactivate the conda environment and return to original directory
-    printf "\nDeactivating conda environment and returning to original directory\n"
-    conda deactivate
-    cd ..
-else
-    printf "chroma_db directory already exists in RAG directory, skipping creation\n"
+    # Now run the RAG app
+    printf "\nRunning Astro Bot RAG app...\n\n"
+    python RAG/run_astrobot.py
 fi
-
-# Check if ollama running, if not start it
-printf "\nChecking if ollama server is running\n"
-if ! pgrep -x "ollama" > /dev/null
-then
-    printf "\nStarting ollama server\n"
-    # run the command in background with nohup
-    nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start' > /dev/null 2>&1 &
-    # If you want to debug use the command below instead (and comment out the one above):
-    # OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
-else
-    printf "\nOllama server already running\n"
-fi
-
-sleep 2
-
-# Now activate the conda environment - if conda command doesn't work use mamba
-printf "\nActivating mamba/conda environment for running Astro Bot RAG\n"
-
-# init current shell to use conda/mamba
-source "$HOME/.bashrc"
-${conda:-mamba} activate astrobot
-
-# Now run the RAG app
-printf "\nRunning Astro Bot RAG app\n\n"
-python RAG/run_astrobot.py
+exit 0
