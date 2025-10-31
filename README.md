@@ -2,6 +2,14 @@
 
 This is a project to create a 'chatbot' learning tool using a library of genomics information with a RAG-LLM and conversation history/memory- so that people can query it with questions about genomics and oxidative stress in order to learn more about the kinds of things I research.
 
+## Requirements  
+
+- bash and curl or wget (one required for downloading installers/models).  
+- Approximately 45 GB of RAM (preferably GPU VRAM). Running with less than 45 GB of VRAM will result in very slow answers (bot could take up to a couple minutes per query).  
+- Tested on:
+  - Ubuntu 22.04 (native and WSL)
+  - Rocky Linux 8.10
+
 ## Running the pipeline (*pipeline.sh*)  
 
 __*Important:*__ *pipeline.sh* must be sourced (not executed) so it can export and activate the conda/mamba environment into your current shell session. 
