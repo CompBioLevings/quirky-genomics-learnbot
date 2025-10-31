@@ -22,10 +22,10 @@ Use:
 Why source? The install step (*install-mamba-and-ollama.sh*) sets up a conda/mamba environment and *pipeline.sh* activates that environment and exports variables that the rest of the session needs. Running *pipeline.sh* in a subshell (```bash ./pipeline.sh```) will not preserve those environment changes in the running shell.
 
 ### Basic workflow examples  
-- Run install-only (perform installation of necessary dependencies and build Chroma db only):
+- Run install-only (perform installation of necessary dependencies and build Chroma db only):  
 ```source pipeline.sh -i```
 
-- Run chat-only (skip installation steps if already configured and start the chat interface):
+- Run chat-only (skip installation steps if already configured and start the chat interface):  
 ```source pipeline.sh -c```
 
 ### Custom installation paths  
