@@ -29,8 +29,7 @@ Why source? The install step (*install-mamba-and-ollama.sh*) sets up a conda/mam
 ```source pipeline.sh -c```
 
 ### Custom installation paths  
-- pipeline.sh supports options to set custom installation locations for mamba and ollama. Example usage (replace with the exact option names found at the top of pipeline.sh if they differ):
-
+- pipeline.sh supports options to set custom installation locations for mamba and ollama. Example usage (replace with the exact option names found at the top of pipeline.sh if they differ):  
 ```source pipeline.sh -m /custom/mamba/path -o /custom/ollama/path```
 
 ## Notes and troubleshooting  
