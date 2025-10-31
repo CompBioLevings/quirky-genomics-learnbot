@@ -174,8 +174,12 @@ if [ "$INSTALL_ONLY" = false ]; then
 
     # Activate environment with conda if present, otherwise use mamba command
     if command -v conda &> /dev/null; then
+        # Save that conda is available
+        env_manager="conda"
         conda activate astrobot
     elif command -v mamba &> /dev/null; then
+        # Save that mamba is available
+        env_manager="mamba"
         mamba activate astrobot
     else
         echo "Error: Neither conda nor mamba command found. Please ensure Mamba/Conda is installed correctly." >&2
@@ -185,4 +189,7 @@ if [ "$INSTALL_ONLY" = false ]; then
     # Now run the RAG app
     printf "\nRunning Astro Bot RAG app...\n\n"
     python RAG/run_astrobot.py
+
+    # When done, deactivate the conda environment
+    $env_manager deactivate
 fi
