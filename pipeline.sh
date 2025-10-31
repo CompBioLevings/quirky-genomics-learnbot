@@ -1,5 +1,8 @@
 #!/bin/bash -l
 
+# Run this pipeline script by sourcing it in order to inherit the conda/mamba environment:
+# $ source ./pipeline.sh [options]
+
 # Pipeline script for creating and running Astro Bot RAG LLM model
 # Supports:
 #  -h                Show help
@@ -13,13 +16,12 @@ usage() {
 Usage: $(basename "$0") [-h] [-m MAMBA_DIR] [-o OLLAMA_HOME_DIR] [-i] [-c]
 
 Options:
-  -h                Show this help message and exit.
-  -m MAMBA_DIR      Set Mambaforge installation directory (default: \$HOME/mambaforge).
-  -o OLLAMA_HOME_DIR
-                    Set Ollama home directory (default: \$HOME). Ollama will install binary to
-                    <OLLAMA_HOME_DIR>/bin and libs to <OLLAMA_HOME_DIR>/lib.
-  -i                Install-only: perform setup steps but do not start the chatbot or ollama server.
-  -c                Chat-only: skip installation steps and just start the chatbot (assumes setup is done).
+  -h                  Show this help message and exit.
+  -m MAMBA_DIR        Set Mambaforge installation directory (default: \$HOME/mambaforge).
+  -o OLLAMA_HOME_DIR  Set Ollama home directory (default: \$HOME). Ollama will install binary to
+                      <OLLAMA_HOME_DIR>/bin and libs to <OLLAMA_HOME_DIR>/lib.
+  -i                  Install-only: perform setup steps but do not start the chatbot or ollama server.
+  -c                  Chat-only: skip installation steps and just start the chatbot (assumes setup is done).
 EOF
 }
 
@@ -46,7 +48,7 @@ while getopts ":hm:o:ic" opt; do
             INSTALL_ONLY=true
             ;;
         c)
-            CHAT_ONLY=false
+            CHAT_ONLY=true
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -169,10 +171,18 @@ if [ "$INSTALL_ONLY" = false ]; then
 
     # init current shell to use conda/mamba
     source "$HOME/.bashrc"
-    ${conda:-mamba} activate astrobot
 
+    # Activate environment with conda if present, otherwise use mamba command
+    if command -v conda &> /dev/null; then
+        conda activate astrobot
+    elif command -v mamba &> /dev/null; then
+        mamba activate astrobot
+    else
+        echo "Error: Neither conda nor mamba command found. Please ensure Mamba/Conda is installed correctly." >&2
+        exit 1
+    fi
+    
     # Now run the RAG app
     printf "\nRunning Astro Bot RAG app...\n\n"
     python RAG/run_astrobot.py
 fi
-exit 0
