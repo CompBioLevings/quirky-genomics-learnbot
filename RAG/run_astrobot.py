@@ -170,7 +170,7 @@ class ConversationalRAGBot:
         """Test what documents are being retrieved for a query."""
         results = self.vectorstore.similarity_search(query, k=k)
         for i, doc in enumerate(results):
-            print(f"\n--- Document {i+1} ---")
+            print(f"\n--- Document {i + 1} ---")
             print(doc.page_content[:500])  # First 500 chars
 
 # Start the chatbot and use
@@ -192,38 +192,76 @@ if __name__ == "__main__":
             break
         
         if user_input.lower() == 'add a document':
-            doc_path = input("Enter document path: ")
-            
-            try:
-                # Determine loader based on file extension
-                if doc_path.endswith('.txt'):
-                    loader = TextLoader(doc_path)
-                elif doc_path.endswith('.pdf'):
-                    loader = PyPDFLoader(doc_path)
-                elif doc_path.endswith('.docx'):
-                    loader = Docx2txtLoader(doc_path)
-                else:
-                    print(f"Unsupported file type. Attempting TextLoader...")
-                    loader = TextLoader(doc_path)
-                
-                # Load document
-                documents = loader.load()
-                
-                # Split documents
-                text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=500,
-                    chunk_overlap=50
-                )
-                splits = text_splitter.split_documents(documents)
-                
-                # Add to vectorstore (already uses all-mpnet-base-v2 embeddings)
-                bot.vectorstore.add_documents(splits)
-                
-                print(f"Successfully added {len(splits)} document chunks to vector store.")
-                
-            except Exception as e:
-                print(f"Error loading document: {e}")
-            
+            # Scan ../new_docs for files in any subfolder
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'new_docs'))
+            file_paths = []
+            if os.path.isdir(base_dir):
+                for root, _, files in os.walk(base_dir):
+                    for f in files:
+                        # skip hidden files
+                        if f.startswith('.'):
+                            continue
+                        file_paths.append(os.path.join(root, f))
+            file_paths = sorted(file_paths, key=lambda p: os.path.relpath(p, base_dir).lower())
+
+            if not file_paths:
+                print(f"No documents found under {base_dir}")
+                continue
+
+            # Present choices: 0 = all, 1..N individual, Q = cancel
+            print("\nFound the following documents:")
+            print(" 0) [Load ALL documents]")
+            for i, p in enumerate(file_paths, start=1):
+                rel = os.path.relpath(p, base_dir)
+                print(f" {i}) {rel}")
+            print(" Q) Cancel and return to prompt")
+
+            choice = input("\nChoose document number to load (0 for ALL, Q to cancel): ").strip()
+            if choice.lower() == 'q':
+                print("Document load cancelled.")
+                continue
+
+            selected = []
+            if choice == '0':
+                selected = file_paths
+            else:
+                if not choice.isdigit():
+                    print("Invalid selection.")
+                    continue
+                idx = int(choice)
+                if idx < 1 or idx > len(file_paths):
+                    print("Selection out of range.")
+                    continue
+                selected = [file_paths[idx - 1]]
+
+            # Load and add selecte file(s)
+            total_chunks = 0
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+            for fp in selected:
+                try:
+                    ext = os.path.splitext(fp)[1].lower()
+                    if ext == '.txt':
+                        loader = TextLoader(fp)
+                    elif ext == '.pdf':
+                        loader = PyPDFLoader(fp)
+                    elif ext == '.docx':
+                        loader = Docx2txtLoader(fp)
+                    else:
+                        print(f"Unsupported extension '{ext}' for {fp}; attempting TextLoader")
+                        loader = TextLoader(fp)
+
+                    docs = loader.load()
+                    splits = text_splitter.split_documents(docs)
+                    if splits:
+                        bot.vectorstore.add_documents(splits)
+                        total_chunks = len(splits)
+                        print(f"Added {len(splits)} chunks from {os.path.relpath(fp, base_dir)}")
+                    else:
+                        print(f"No chunks produced for {fp}")
+                except Exception as e:
+                    print(f"Error loading {fp}: {e}")
+
+            print(f"Finished. Total chunks added: {total_chunks}")
             continue
         
         else:
