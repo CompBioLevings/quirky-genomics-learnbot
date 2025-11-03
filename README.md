@@ -14,12 +14,14 @@ This is a project to create a 'chatbot' learning tool using a library of genomic
 
 ## Running the pipeline (*pipeline.sh*)  
 
-__*Important:*__ *pipeline.sh* must be sourced (not executed) so it can export and activate the conda/mamba environment into your current shell session. 
+__*Important:*__ *pipeline.sh* must be sourced (not executed) so it can export and activate the conda/mamba environment into your current shell session.  
 
-Use:
+Use:  
 ```source pipeline.sh [options]```
 
-Why source? The install step (*install-mamba-and-ollama.sh*) sets up a conda/mamba environment and *pipeline.sh* activates that environment and exports variables that the rest of the session needs. Running *pipeline.sh* in a subshell (```bash ./pipeline.sh```) will not preserve those environment changes in the running shell.
+Why source? The install step (*install-mamba-and-ollama.sh*) sets up a conda/mamba environment and *pipeline.sh* activates that environment and exports variables that the rest of the session needs. Running *pipeline.sh* in a subshell (```bash ./pipeline.sh```) will not preserve those environment changes in the running shell.  
+
+*Note:* This chatbot allows incorporation of additional documents to the vector store if you would like to add more information to it's knowledge base (to ask questions about).  Just put the documents in the folder `new_docs/` use the '*add a document*' command and follow the prompts to do so.
 
 ### Basic workflow examples  
 - Run install-only (perform installation of necessary dependencies and build Chroma db only):  
