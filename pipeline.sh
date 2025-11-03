@@ -13,7 +13,7 @@
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [-h] [-m MAMBA_DIR] [-o OLLAMA_HOME_DIR] [-i] [-c]
+Usage: $(basename "$0") [-h] [-m MAMBA_DIR] [-o OLLAMA_HOME_DIR] [-i] [-c] [-v]
 
 Options:
   -h                  Show this help message and exit.
@@ -22,6 +22,7 @@ Options:
                       <OLLAMA_HOME_DIR>/bin and libs to <OLLAMA_HOME_DIR>/lib.
   -i                  Install-only: perform setup steps but do not start the chatbot or ollama server.
   -c                  Chat-only: skip installation steps and just start the chatbot (assumes setup is done).
+  -v                  Verbose output; will output Ollama streaming to console.
 EOF
 }
 
@@ -30,9 +31,10 @@ MAMBA_DIR="$HOME/mambaforge"
 OLLAMA_HOME_DIR="$HOME"
 INSTALL_ONLY=false
 CHAT_ONLY=false
+VERBOSE=false
 
 # Parse options
-while getopts ":hm:o:ic" opt; do
+while getopts ":hm:o:icv" opt; do
     case $opt in
         h)
             usage
@@ -49,6 +51,9 @@ while getopts ":hm:o:ic" opt; do
             ;;
         c)
             CHAT_ONLY=true
+            ;;
+        v)
+            VERBOSE=true
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -89,7 +94,15 @@ if  [ "$CHAT_ONLY" = false ]; then
         mamba env create -n astrobot -f astrobot.yml -y
 
         # Fire up ollama (only during install/setup if desired)
-        OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
+        if [ "$VERBOSE" = true ]; then
+            printf "\nStarting ollama server in foreground (verbose mode)\n"
+            OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
+        else
+            printf "\nStarting ollama server in background\n"
+            # run the command in background with nohup
+            nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &> /dev/null &'
+        fi
+        sleep 2
 
         # Now pull model
         printf "\nPulling the command-r model\n"
@@ -138,6 +151,10 @@ if  [ "$CHAT_ONLY" = false ]; then
         printf "\nDeactivating conda environment and returning to original directory\n"
         conda deactivate
         cd ..
+
+        # Turn off ollama
+        printf "\nStopping ollama server\n"
+        ollama stop
     else
         printf "chroma_db directory already exists in RAG directory, skipping creation\n"
     fi
@@ -155,11 +172,14 @@ if [ "$INSTALL_ONLY" = false ]; then
     printf "\nChecking if ollama server is running\n"
     if ! pgrep -x "ollama" > /dev/null
     then
-        printf "\nStarting ollama server\n"
-        # run the command in background with nohup
-        nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start' > /dev/null 2>&1 &
-        # If you want to debug use the command below instead (and comment out the one above):
-        # OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &
+        if [ "$VERBOSE" = true ]; then
+            printf "\nStarting ollama server in foreground (verbose mode)\n"
+            OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama serve &
+        else
+            printf "\nStarting ollama server in background\n"
+            # run the command in background with nohup
+            nohup bash -c 'OLLAMA_NUM_PARALLEL=1 OLLAMA_MAX_LOADED_MODELS=1 ollama start &> /dev/null &'
+        fi
     else
         printf "\nOllama server already running\n"
     fi
