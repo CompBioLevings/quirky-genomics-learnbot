@@ -171,9 +171,6 @@ if  [ "$CHAT_ONLY" = false ]; then
         $env_manager deactivate
         cd ..
 
-        # Turn off ollama
-        printf "\nStopping ollama server\n"
-        ollama stop
     else
         printf "chroma_db directory already exists in RAG directory, skipping creation\n"
     fi
