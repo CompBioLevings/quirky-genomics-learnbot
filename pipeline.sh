@@ -89,9 +89,28 @@ if  [ "$CHAT_ONLY" = false ]; then
         printf "\nInitializing mamba and ollama for running via commandline\n"
         source "$HOME/.bashrc"
 
+        # Check if conda or mamba exists
+        if command -v conda &> /dev/null; then
+        # Save that conda is available
+            env_manager="conda"
+        elif command -v mamba &> /dev/null; then
+            # Save that mamba is available
+            env_manager="mamba"
+        else
+            echo "Error: Neither conda nor mamba command found. Please ensure Mamba/Conda is installed correctly." >&2
+            exit 1
+        fi
+
         # First set up environment for making a RAG (retrieval-augmented generation) model
-        printf "\nCreating mamba environment for Astro Bot RAG model.\nNOTE: this step may take quite a while, like 10-30 minutes depending on your environment!\n"
-        mamba env create -n astrobot -f astrobot.yml -y
+        # Check if mamba environment 'astrobot' already exists and if so skip creation
+        if $env_manager info --envs | grep -q '^astrobot\s'; then
+            printf "\nMamba environment 'astrobot' already exists, skipping creation"
+            echo ""
+        else
+            printf "\nCreating mamba environment for Astro Bot RAG model.\nNOTE: this step may take quite a while, like 10-30 minutes depending on your environment!"
+            echo ""
+            $env_manager env create -n astrobot -f astrobot.yml -y
+        fi
 
         # Fire up ollama (only during install/setup if desired)
         if [ "$VERBOSE" = true ]; then
@@ -137,7 +156,7 @@ if  [ "$CHAT_ONLY" = false ]; then
 
         # Now activate environment
         printf "\nActivating mamba/conda environment for setting up RAG\n"
-        conda activate astrobot
+        $env_manager activate astrobot
 
         # move into the RAG directory
         printf "\nChanging to RAG dir\n"
@@ -149,7 +168,7 @@ if  [ "$CHAT_ONLY" = false ]; then
 
         # Deactivate the conda environment and return to original directory
         printf "\nDeactivating conda environment and returning to original directory\n"
-        conda deactivate
+        $env_manager deactivate
         cd ..
 
         # Turn off ollama
