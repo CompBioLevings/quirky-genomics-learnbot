@@ -226,6 +226,9 @@ if [ "$INSTALL_ONLY" = false ]; then
     printf "\nRunning Astro Bot RAG app...\n\n"
     python RAG/run_astrobot.py
 
+    # Now clear the screen after exiting the chatbot
+    clear
+
     # When done, deactivate the conda environment
     $env_manager deactivate
 fi

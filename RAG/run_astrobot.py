@@ -180,7 +180,15 @@ if __name__ == "__main__":
         chroma_persist_dir="./RAG/chroma_db", \
         model_name="astrobot")
     
-    # bot.test_retrieval("Do you have any papers about ROS-independent Nrf2 activation in prostate cance", k=2)
+    # Load ASCII art from file 'ascii-robot.txt' (one level up from this script)
+    ascii_art = ""
+    try:
+        ascii_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ascii-robot.txt"))
+        if os.path.exists(ascii_path):
+            with open(ascii_path, "r", encoding="utf-8") as f:
+                ascii_art = f.read()
+    except Exception:
+        ascii_art = ""
     
     # Chat loop
     print("Astro Bot booting up! Type 'quit' to exit or 'Add a document' to load a file.")
@@ -266,4 +274,15 @@ if __name__ == "__main__":
         
         else:
             response = bot.chat(user_input)
-            print(f"\nAstro Bot: {response}")
+
+            # Clear terminal and display ascii art, then user query and bot response
+            try:
+                clear_cmd = "cls" if os.name == "nt" else "clear"
+                os.system(clear_cmd)
+            except Exception:
+                pass
+
+            if ascii_art:
+                print(ascii_art)
+            print(f"\nQuery: {user_input}\n")
+            print(f"Astro Bot: {response}")
