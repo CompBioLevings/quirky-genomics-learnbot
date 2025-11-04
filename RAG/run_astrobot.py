@@ -281,8 +281,9 @@ if __name__ == "__main__":
                 os.system(clear_cmd)
             except Exception:
                 pass
-
+            
+            # Output query, art and response to terminal
+            print(f"\nQuery: {user_input}\n")
             if ascii_art:
                 print(ascii_art)
-            print(f"\nQuery: {user_input}\n")
             print(f"Astro Bot: {response}")
